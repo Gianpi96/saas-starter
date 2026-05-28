@@ -1,0 +1,19 @@
+{
+  "framework": "nextjs",
+  "buildCommand": "npm run build",
+  "outputDirectory": ".next",
+  "rewrites": [
+    { "source": "/api/health",          "destination": "https://your-app.onrender.com/api/health" },
+    { "source": "/api/ready",           "destination": "https://your-app.onrender.com/api/ready" },
+    { "source": "/api/users/:path*",    "destination": "https://your-app.onrender.com/api/users/:path*" },
+    { "source": "/api/auth/login",      "destination": "https://your-app.onrender.com/api/auth/login" },
+    { "source": "/api/auth/register",   "destination": "https://your-app.onrender.com/api/auth/register" },
+    { "source": "/api/docs",            "destination": "https://your-app.onrender.com/api/docs" },
+    { "source": "/api/redoc",           "destination": "https://your-app.onrender.com/api/redoc" },
+    { "source": "/api/openapi.json",    "destination": "https://your-app.onrender.com/api/openapi.json" }
+  ],
+  "env": {
+    "BACKEND_URL": "https://your-app.onrender.com",
+    "NEXT_PUBLIC_API_URL": "https://your-app.onrender.com"
+  }
+}
