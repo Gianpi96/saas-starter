@@ -40,10 +40,18 @@ jobs:
     steps:
       - uses: actions/checkout@v4
 
+      # ── Backend ──────────────────────────────────────────────────────────────
       - name: Setup Python
         uses: actions/setup-python@v5
         with:
           python-version: "3.12"
+
+      - name: Cache pip
+        uses: actions/cache@v4
+        with:
+          path: ~/.cache/pip
+          key: ${{ runner.os }}-pip-${{ hashFiles('backend/requirements.txt') }}
+          restore-keys: ${{ runner.os }}-pip-
 
       - name: Install backend dependencies
         working-directory: ./backend
@@ -53,27 +61,34 @@ jobs:
         working-directory: ./backend
         env:
           DATABASE_URL: postgresql+asyncpg://saas_user:saas_password_test@localhost:5432/saas_db_test
-          REDIS_URL: redis://localhost:6379/0
-          JWT_SECRET_KEY: ci_test_secret_key_32_characters_min
+          REDIS_URL: redis://localhost:6379/0          # no password in CI
+          JWT_SECRET_KEY: ci_test_secret_key_that_is_32_chars_long
           CORS_ORIGINS: http://localhost:3000
           ENVIRONMENT: development
+          LOGIN_RATE_LIMIT: "60/minute"               # generous limit in CI
         run: |
           uvicorn main:app --host 0.0.0.0 --port 8000 &
-          sleep 5
-          curl -f http://localhost:8000/api/health || exit 1
+          # Wait until backend is healthy
+          for i in $(seq 1 15); do
+            curl -sf http://localhost:8000/api/health && echo " ✓ backend up" && break
+            echo "Waiting for backend... ($i/15)"
+            sleep 2
+          done
+          curl -f http://localhost:8000/api/health
 
       - name: Create test user
         env:
           DATABASE_URL: postgresql+asyncpg://saas_user:saas_password_test@localhost:5432/saas_db_test
           REDIS_URL: redis://localhost:6379/0
-          JWT_SECRET_KEY: ci_test_secret_key_32_characters_min
+          JWT_SECRET_KEY: ci_test_secret_key_that_is_32_chars_long
           CORS_ORIGINS: http://localhost:3000
           ENVIRONMENT: development
         run: |
           python backend/scripts/create_test_user.py \
-            --email "${{ vars.E2E_TEST_EMAIL || 'test@example.com' }}" \
-            --password "${{ secrets.E2E_TEST_PASSWORD || 'testpassword123' }}"
+            --email "test@example.com" \
+            --password "testpassword123"
 
+      # ── Frontend ─────────────────────────────────────────────────────────────
       - name: Setup Node.js
         uses: actions/setup-node@v4
         with:
@@ -92,13 +107,15 @@ jobs:
       - name: Run Playwright tests
         working-directory: ./frontend
         env:
+          CI: "true"
           E2E_BASE_URL: http://localhost:3000
-          NEXTAUTH_SECRET: ci_nextauth_secret_test
+          E2E_TEST_EMAIL: test@example.com
+          E2E_TEST_PASSWORD: testpassword123
+          # Next.js env vars (picked up by webServer: npm run dev)
+          NEXTAUTH_SECRET: ci_nextauth_secret_test_value
           NEXTAUTH_URL: http://localhost:3000
           BACKEND_URL: http://localhost:8000
           NEXT_PUBLIC_API_URL: http://localhost:8000
-          E2E_TEST_EMAIL: ${{ vars.E2E_TEST_EMAIL || 'test@example.com' }}
-          E2E_TEST_PASSWORD: ${{ secrets.E2E_TEST_PASSWORD || 'testpassword123' }}
         run: npx playwright test --workers=3
 
       - name: Upload Playwright report
