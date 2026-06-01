@@ -1,153 +1,124 @@
-# SaaS Starter
+# saas-starter
 
-![E2E Tests](https://github.com/Gianpi96/saas-starter/actions/workflows/e2e.yml/badge.svg)
-![TypeScript](https://img.shields.io/badge/TypeScript-strict-blue)
-![License](https://img.shields.io/badge/license-MIT-green)
+[![Build](https://img.shields.io/github/actions/workflow/status/Gianpi96/saas-starter/ci.yml?branch=main&label=build&style=flat-square)](https://github.com/Gianpi96/saas-starter/actions)
+[![License: MIT](https://img.shields.io/badge/license-MIT-blue?style=flat-square)](LICENSE)
+[![Deploy with Vercel](https://img.shields.io/badge/deploy-Vercel-black?style=flat-square&logo=vercel)](https://vercel.com/new/clone?repository-url=https://github.com/Gianpi96/saas-starter)
 
-Production-ready SaaS boilerplate: **Next.js 16** frontend + **FastAPI** backend, with JWT authentication, dashboard, profile management, and a full Playwright E2E test suite (19/19 passing).
-
----
-
-## Stack
-
-| Layer | Technology |
-|---|---|
-| Frontend | Next.js 16 · App Router · TypeScript strict · Tailwind CSS · shadcn/ui |
-| Auth | NextAuth.js v5 · JWT (15 min access + 7 d refresh) · httpOnly cookie |
-| Backend | FastAPI · async SQLAlchemy · Alembic · Pydantic v2 |
-| Database | PostgreSQL 16 |
-| Cache / Rate-limit | Redis 7 · slowapi |
-| Testing | Playwright · Page Object Model · storageState · 3 workers |
-| CI | GitHub Actions (E2E on every push) |
-| Deploy | Vercel (frontend) · Render (backend) |
+**Go from zero to a working SaaS product in one afternoon — auth, dashboard, and API included.**
 
 ---
 
-## Features
+## What you get
 
-- **Register / Login / Logout** — credentials provider, JWT blacklist on logout
-- **Route guard** — `proxy.ts` protects `/dashboard/*`, redirects unauthenticated users
-- **Dashboard** — TanStack Query v5 with skeleton loader and Sonner toasts
-- **Profile management** — update name/email, change password with validation
-- **Security** — bcrypt hashing, rate limiting (configurable), refresh token rotation
-- **19 E2E tests** — auth, dashboard, profile, registration — all green
+- **Auth that works end-to-end** — NextAuth.js v5 with JWT and httpOnly cookies. Registration, login, logout, and password change all tested and working. Route protection via Next.js middleware so unauthenticated users never reach the dashboard.
+- **A dashboard you can ship** — Built with shadcn/ui and TanStack Query v5. Data fetches are cached and revalidated automatically. Mobile-first, accessible, dark mode ready.
+- **A FastAPI backend with async database access** — SQLAlchemy async with PostgreSQL 16. Pydantic v2 for request validation. All endpoints documented at `/docs` automatically.
+- **Redis rate limiting** — Brute-force protection on auth endpoints out of the box. Configurable per route.
+- **19 E2E tests — all passing** — Playwright test suite with Page Object Model covers auth flows, dashboard access, and profile management. Runs in CI on every push.
+- **CI/CD on push** — GitHub Actions pipeline runs tests and deploys automatically. Frontend to Vercel, backend to Render.
+- **Docker Compose for local dev** — One command starts PostgreSQL, Redis, backend, and frontend together.
 
 ---
 
-## Quick Start
+## Screenshots
 
-### Prerequisites
-- Docker & Docker Compose
-- Node.js 20+
-- Python 3.12+
+> Aggiungi screenshot qui: `![Dashboard](docs/screenshot-dashboard.png)`
 
-### 1. Clone & configure
+---
+
+## Quick start
 
 ```bash
-git clone https://github.com/Gianpi96/saas-starter.git
+# 1. Clona e installa
+git clone https://github.com/Gianpi96/saas-starter
 cd saas-starter
-cp .env.example .env          # edit as needed
+
+# 2. Avvia database e servizi con Docker
+docker-compose up -d
+
+# 3. Configura le variabili d'ambiente e avvia
+cp backend/.env.example backend/.env
+cp frontend/.env.example frontend/.env.local
+cd frontend && npm install && npm run dev
 ```
 
-### 2. Start infrastructure
-
-```bash
-docker compose up -d          # postgres:5432 · redis:6380 · backend:8000
-```
-
-### 3. Create a test user
-
-```bash
-python backend/scripts/create_test_user.py \
-  --email test@example.com \
-  --password testpassword123
-```
-
-### 4. Start frontend
-
-```bash
-cd frontend
-cp .env.local.example .env.local   # or create it — see below
-npm install
-npm run dev                         # http://localhost:3000
-```
-
-Minimal `frontend/.env.local`:
-```
-NEXTAUTH_SECRET=dev_secret_replace_in_production
-NEXTAUTH_URL=http://localhost:3000
-BACKEND_URL=http://localhost:8000
-NEXT_PUBLIC_API_URL=http://localhost:8000
-```
+Backend disponibile su `http://localhost:8000/docs`
+Frontend disponibile su `http://localhost:3000`
 
 ---
 
-## Running Tests
+## Environment variables
 
-```bash
-cd frontend
-npx playwright install --with-deps chromium   # first time only
-npx playwright test --workers=3
-```
+### Backend (`backend/.env`)
 
-Expected output: **19 passed** in ~25 s.
+| Variable | Required | Example | Note |
+|---|---|---|---|
+| `DATABASE_URL` | ✅ | `postgresql+asyncpg://user:pass@localhost/db` | PostgreSQL 16+ |
+| `REDIS_URL` | ✅ | `redis://localhost:6379` | Per rate limiting |
+| `SECRET_KEY` | ✅ | `openssl rand -hex 32` | JWT signing key |
+| `ALGORITHM` | ✅ | `HS256` | JWT algorithm |
+| `ACCESS_TOKEN_EXPIRE_MINUTES` | ✅ | `30` | Durata token |
+
+### Frontend (`frontend/.env.local`)
+
+| Variable | Required | Example | Note |
+|---|---|---|---|
+| `NEXTAUTH_SECRET` | ✅ | `openssl rand -base64 32` | NextAuth secret |
+| `NEXTAUTH_URL` | ✅ | `http://localhost:3000` | URL del frontend |
+| `NEXT_PUBLIC_API_URL` | ✅ | `http://localhost:8000` | URL del backend |
 
 ---
 
-## Project Structure
+## Architettura
 
 ```
 saas-starter/
-├── backend/
+├── backend/                  # FastAPI application
 │   ├── routers/
-│   │   ├── auth.py          # /api/auth/{login,register,logout,refresh}
-│   │   └── users.py         # /api/users/{me, me/change-password}
-│   ├── security.py          # bcrypt + JWT helpers
-│   ├── config.py            # Pydantic settings (env-driven)
-│   └── scripts/
-│       └── create_test_user.py
-├── frontend/
-│   ├── src/
-│   │   ├── app/
-│   │   │   ├── (auth)/      # login · register
-│   │   │   └── dashboard/   # dashboard · profile · settings
-│   │   ├── components/
-│   │   │   ├── dashboard/   # sidebar · welcome-card · profile-form · change-password-form
-│   │   │   └── ui/          # shadcn/ui primitives
-│   │   ├── lib/
-│   │   │   ├── auth.ts      # NextAuth config
-│   │   │   └── api.ts       # axios client + typed helpers
-│   │   └── proxy.ts         # route guard (Next.js 16 middleware)
-│   └── e2e/
-│       ├── global-setup.ts  # login once, save storageState
-│       ├── fixtures.ts      # inject auth cookies into page context
-│       └── pages/           # Page Object Model
-├── docker-compose.yml
-├── render.yaml              # Render deploy config
-└── frontend/vercel.json     # Vercel deploy config
+│   │   ├── auth.py           # Register, login, logout, refresh
+│   │   └── users.py          # Profile CRUD, password change
+│   ├── models/               # SQLAlchemy async models
+│   ├── schemas/              # Pydantic v2 request/response schemas
+│   ├── middleware/           # Rate limiting, JWT blacklist
+│   └── tests/                # Pytest unit tests
+│
+├── frontend/                 # Next.js 14 App Router
+│   ├── app/
+│   │   ├── (auth)/           # Login, register pages
+│   │   └── dashboard/        # Protected dashboard + profile
+│   ├── components/           # shadcn/ui components
+│   ├── lib/                  # API client, WebSocket, auth helpers
+│   └── tests/                # Playwright E2E (19 test, tutti passing)
+│
+├── .github/workflows/        # CI/CD GitHub Actions
+├── docker-compose.yml        # PostgreSQL + Redis + backend + frontend
+└── render.yaml               # Deploy config per Render
+```
+
+**Flusso di autenticazione:**
+
+```
+Client → POST /auth/login
+  → Valida credenziali (bcrypt)
+  → Genera JWT access token + refresh token
+  → Imposta httpOnly cookies (non accessibili da JS)
+  → Middleware Next.js verifica token su ogni route protetta
+  → Logout → aggiunge token a blacklist Redis
 ```
 
 ---
 
-## Deploy
+## Why this stack
 
-### Backend → Render
+**FastAPI + SQLAlchemy async** — le query al database non bloccano il thread. Sotto carico, un'applicazione async gestisce molte più richieste concorrenti rispetto a un'app Flask/Django sincrona con lo stesso hardware.
 
-1. Connect repo on [render.com](https://render.com) → **New Blueprint** → select this repo  
-   Render reads `render.yaml` automatically.
-2. Set environment variables manually:
-   - `REDIS_URL` → your Redis provider URL (e.g. Upstash)
-   - `CORS_ORIGINS` → `https://your-app.vercel.app`
+**JWT con blacklist Redis invece di session store** — i JWT sono stateless per design, ma senza blacklist il logout non invalida davvero il token. Redis permette di invalidare token specifici in O(1) senza appesantire il database.
 
-### Frontend → Vercel
+**shadcn/ui invece di una component library completa** — shadcn/ui copia i componenti nel tuo codice invece di installarli come dipendenza. Puoi modificare ogni componente senza override CSS o fork. Zero lock-in.
 
-1. Import repo on [vercel.com](https://vercel.com), set **Root Directory** to `frontend`
-2. Set environment variables:
-   - `NEXTAUTH_SECRET` → random 32+ char string
-   - `NEXTAUTH_URL` → `https://your-app.vercel.app`
-   - `BACKEND_URL` → `https://your-api.onrender.com`
-   - `NEXT_PUBLIC_API_URL` → `https://your-api.onrender.com`
-3. Update `frontend/vercel.json` with your real Render URL, then `git push`
+**TanStack Query v5** — gestisce caching, refetch, e stati di loading/error in modo dichiarativo. Elimina decine di righe di `useEffect` e `useState` per ogni chiamata API.
+
+**Playwright con Page Object Model** — i test E2E sono mantenibili perché ogni pagina ha la sua classe con i selettori. Se cambia un selettore, lo cambi in un posto solo e tutti i test si aggiornano.
 
 ---
 
