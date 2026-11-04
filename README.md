@@ -1,6 +1,6 @@
 # saas-starter
 
-[![Build](https://img.shields.io/github/actions/workflow/status/Gianpi96/saas-starter/ci.yml?branch=main&label=build&style=flat-square)](https://github.com/Gianpi96/saas-starter/actions)
+[![Build](https://img.shields.io/github/actions/workflow/status/Gianpi96/saas-starter/e2e.yml?branch=main&label=build&style=flat-square)](https://github.com/Gianpi96/saas-starter/actions)
 [![License: MIT](https://img.shields.io/badge/license-MIT-blue?style=flat-square)](LICENSE)
 [![Deploy with Vercel](https://img.shields.io/badge/deploy-Vercel-black?style=flat-square&logo=vercel)](https://vercel.com/new/clone?repository-url=https://github.com/Gianpi96/saas-starter)
 
@@ -20,12 +20,6 @@
 
 ---
 
-## Screenshots
-
-> Aggiungi screenshot qui: `![Dashboard](docs/screenshot-dashboard.png)`
-
----
-
 ## Quick start
 
 ```bash
@@ -33,12 +27,14 @@
 git clone https://github.com/Gianpi96/saas-starter
 cd saas-starter
 
-# 2. Avvia database e servizi con Docker
+# 2. Configura le variabili d'ambiente
+cp .env.example .env                              # letto da docker-compose (database, Redis, backend)
+cp frontend/.env.example frontend/.env.local      # NextAuth e URL del backend
+
+# 3. Avvia database, Redis e backend con Docker
 docker-compose up -d
 
-# 3. Configura le variabili d'ambiente e avvia
-cp backend/.env.example backend/.env
-cp frontend/.env.example frontend/.env.local
+# 4. Avvia il frontend
 cd frontend && npm install && npm run dev
 ```
 
@@ -49,7 +45,7 @@ Frontend disponibile su `http://localhost:3000`
 
 ## Environment variables
 
-### Backend (`backend/.env`)
+### Backend (file `.env` nella root, letto da docker-compose)
 
 | Variable | Required | Example | Note |
 |---|---|---|---|
