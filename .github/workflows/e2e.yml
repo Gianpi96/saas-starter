@@ -67,7 +67,7 @@ jobs:
           ENVIRONMENT: development
         run: |
           pip install pytest
-          pytest tests -q
+          python -m pytest tests -q
 
       - name: Start FastAPI backend
         working-directory: ./backend
