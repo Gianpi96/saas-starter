@@ -57,6 +57,18 @@ jobs:
         working-directory: ./backend
         run: pip install -r requirements.txt
 
+      - name: Backend token tests
+        working-directory: ./backend
+        env:
+          DATABASE_URL: postgresql+asyncpg://saas_user:saas_password_test@localhost:5432/saas_db_test
+          REDIS_URL: redis://localhost:6379/0
+          JWT_SECRET_KEY: ci_test_secret_key_that_is_32_chars_long
+          CORS_ORIGINS: http://localhost:3000
+          ENVIRONMENT: development
+        run: |
+          pip install pytest
+          pytest tests -q
+
       - name: Start FastAPI backend
         working-directory: ./backend
         env:
