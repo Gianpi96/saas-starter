@@ -2,7 +2,7 @@ from fastapi import Depends, HTTPException, status, Request
 from fastapi.security import HTTPBearer, HTTPAuthorizationCredentials
 from sqlalchemy.ext.asyncio import AsyncSession
 from sqlalchemy import select
-from jose import JWTError
+from jwt import PyJWTError
 from database import get_db
 from redis_client import get_redis
 from security import decode_token, TOKEN_BLACKLIST_PREFIX
@@ -22,7 +22,7 @@ async def get_current_user(
     token = credentials.credentials
     try:
         payload = decode_token(token)
-    except JWTError:
+    except PyJWTError:
         raise HTTPException(status_code=status.HTTP_401_UNAUTHORIZED, detail="Invalid token")
 
     if payload.get("type") != "access":
