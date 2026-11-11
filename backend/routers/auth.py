@@ -5,7 +5,7 @@ from sqlalchemy import select
 from pydantic import BaseModel, EmailStr
 from slowapi import Limiter
 from slowapi.util import get_remote_address
-from jose import JWTError
+from jwt import PyJWTError
 
 from database import get_db
 from redis_client import get_redis
@@ -110,7 +110,7 @@ async def refresh_token(
 
     try:
         payload = decode_token(refresh_token)
-    except JWTError:
+    except PyJWTError:
         raise HTTPException(status_code=status.HTTP_401_UNAUTHORIZED, detail="Invalid refresh token")
 
     if payload.get("type") != "refresh":
@@ -150,7 +150,7 @@ async def logout(
             exp = payload.get("exp", 0)
             ttl = max(0, exp - int(datetime.now(timezone.utc).timestamp()))
             await redis.setex(f"{TOKEN_BLACKLIST_PREFIX}{refresh_token}", ttl, "1")
-        except JWTError:
+        except PyJWTError:
             pass
 
     response.delete_cookie(REFRESH_COOKIE_NAME)
